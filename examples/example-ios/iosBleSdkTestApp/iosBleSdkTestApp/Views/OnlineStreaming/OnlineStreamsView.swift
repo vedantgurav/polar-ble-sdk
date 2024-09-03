@@ -152,6 +152,8 @@ extension PolarDeviceDataType: Identifiable {
             return 6
         case .hr:
             return 7
+        case .temperature:
+            return 8
         }
     }
 }

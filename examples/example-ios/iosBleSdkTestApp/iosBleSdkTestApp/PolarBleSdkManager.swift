@@ -257,6 +257,8 @@ class PolarBleSdkManager : ObservableObject {
             ppiStreamStart()
         case .hr:
             hrStreamStart()
+        case .temperature:
+            break
         }
     }
     
@@ -392,6 +394,8 @@ class PolarBleSdkManager : ObservableObject {
                         self.offlineRecordingData.dataSize = offlineRecordingEntry.size
                         self.offlineRecordingData.downLoadTime = elapsedTime
                     }
+                case .temperatureOfflineRecordingData(_, startTime: let startTime):
+                    break
                 }
                 Task { @MainActor in
                     self.offlineRecordingData.loadState = OfflineRecordingDataLoadingState.success
@@ -1067,6 +1071,8 @@ class PolarBleSdkManager : ObservableObject {
             result =  "TIMESTAMP X(Gauss) Y(Gauss) Z(Gauss)\n"
         case .hr:
             result = "HR CONTACT_SUPPORTED CONTACT_STATUS RR_AVAILABLE RR(ms)\n"
+        case .temperature:
+            result = "TEMP\n"
         }
         return result
     }
@@ -1182,6 +1188,8 @@ fileprivate extension PolarDeviceDataType {
             return "MAG"
         case .hr:
             return "HR"
+        case .temperature:
+            return "TEMP"
         }
     }
 }
@@ -1238,6 +1246,10 @@ extension PolarBleSdkManager : PolarBleApiObserver {
 
 // MARK: - PolarBleApiDeviceInfoObserver
 extension PolarBleSdkManager : PolarBleApiDeviceInfoObserver {
+    func disInformationReceivedWithKeysAsStrings(_ identifier: String, key: String, value: String) {
+        //
+    }
+    
     func batteryLevelReceived(_ identifier: String, batteryLevel: UInt) {
         NSLog("battery level updated: \(batteryLevel)")
         Task { @MainActor in
@@ -1338,6 +1350,8 @@ extension PolarBleSdkManager : PolarBleApiDeviceFeaturesObserver {
             Task {
                 await getSdkModeStatus()
             }
+            break
+        case .feature_polar_activity_data:
             break
         }
     }
