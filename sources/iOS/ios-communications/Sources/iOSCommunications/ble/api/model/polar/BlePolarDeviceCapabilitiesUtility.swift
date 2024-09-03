@@ -14,6 +14,7 @@ open class BlePolarDeviceCapabilitiesUtility {
     public static let INW5T = "inw5t"
     // TODO: Update when device BLE name is updated
     public static let HONDA = "honda"
+    public static let P360 = "360"
     public static let IGNITE_3 = "ignite 3"
     public static let GRIT_X2_PRO = "grit x2 pro"
     public static let VANTAGE_V3 = "vantage v3"
@@ -23,15 +24,10 @@ open class BlePolarDeviceCapabilitiesUtility {
     /// - Returns: type of the file system supported or unknown file system type
    public static func fileSystemType(_ deviceType: String) -> FileSystemType {
         switch deviceType.lowercased() {
-        case "h10":
+        case H10:
             return FileSystemType.h10FileSystem
-        case OH1: fallthrough
-        case SENSE: fallthrough
-        case INW5T: fallthrough
-        case HONDA: fallthrough
-        case IGNITE_3: fallthrough
-        case GRIT_X2_PRO: fallthrough
-        case VANTAGE_V3:
+        case OH1, SENSE, INW5T, HONDA, IGNITE_3,
+            GRIT_X2_PRO, P360, VANTAGE_V3:
             return FileSystemType.sagRfc2FileSystem
         default:
             return FileSystemType.unknownFileSystem
