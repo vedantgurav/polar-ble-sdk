@@ -3,11 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0B2FC40F2C63BCAB00583257 /* PolarBleSdk in Frameworks */ = {isa = PBXBuildFile; productRef = 0B2FC40E2C63BCAB00583257 /* PolarBleSdk */; };
+		0BCC914A2C9A1E7000B88304 /* PolarBleSdk in Frameworks */ = {isa = PBXBuildFile; productRef = 0BCC91492C9A1E7000B88304 /* PolarBleSdk */; };
 		A50C368E267B162E00D9F150 /* ButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50C368D267B162E00D9F150 /* ButtonStyle.swift */; };
 		A50C3691267B271300D9F150 /* RecordingSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50C3690267B271300D9F150 /* RecordingSettings.swift */; };
 		A5223EBD2AA5EA2B00DFB5F9 /* LedAnimationFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5223EBC2AA5EA2B00DFB5F9 /* LedAnimationFeature.swift */; };
@@ -109,7 +109,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0B2FC40F2C63BCAB00583257 /* PolarBleSdk in Frameworks */,
+				0BCC914A2C9A1E7000B88304 /* PolarBleSdk in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -305,7 +305,7 @@
 			);
 			name = iosBleSdkTestApp;
 			packageProductDependencies = (
-				0B2FC40E2C63BCAB00583257 /* PolarBleSdk */,
+				0BCC91492C9A1E7000B88304 /* PolarBleSdk */,
 			);
 			productName = iosBleSdkTestApp;
 			productReference = A5776BA22663A28700A36BA5 /* iosBleSdkTestApp.app */;
@@ -379,7 +379,7 @@
 			);
 			mainGroup = A5776B992663A28700A36BA5;
 			packageReferences = (
-				0B2FC40D2C63BCAB00583257 /* XCRemoteSwiftPackageReference "polar-ble-sdk" */,
+				0BCC91482C9A1E7000B88304 /* XCLocalSwiftPackageReference "../../../../polar-ble-sdk" */,
 			);
 			productRefGroup = A5776BA32663A28700A36BA5 /* Products */;
 			projectDirPath = "";
@@ -773,21 +773,16 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		0B2FC40D2C63BCAB00583257 /* XCRemoteSwiftPackageReference "polar-ble-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/polarofficial/polar-ble-sdk.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 5.6.0;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		0BCC91482C9A1E7000B88304 /* XCLocalSwiftPackageReference "../../../../polar-ble-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../../../polar-ble-sdk";
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		0B2FC40E2C63BCAB00583257 /* PolarBleSdk */ = {
+		0BCC91492C9A1E7000B88304 /* PolarBleSdk */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0B2FC40D2C63BCAB00583257 /* XCRemoteSwiftPackageReference "polar-ble-sdk" */;
 			productName = PolarBleSdk;
 		};
 /* End XCSwiftPackageProductDependency section */
