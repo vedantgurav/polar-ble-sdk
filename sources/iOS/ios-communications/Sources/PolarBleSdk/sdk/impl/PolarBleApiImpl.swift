@@ -2203,6 +2203,90 @@ extension PolarBleApiImpl: PolarBleApi  {
             return Disposables.create()
         }
     }
+    
+    func checkForFirmwareUpdate(_ identifier: String) -> RxSwift.Single<Bool> {
+        return Single.create { single in
+            let fwApi = FirmwareUpdateApi()
+            
+            do {
+                let session = try self.sessionFtpClientReady(identifier)
+                guard let client = session.fetchGattClient(BlePsFtpClient.PSFTP_SERVICE) as? BlePsFtpClient else {
+                    single(.success(false))
+                    return Disposables.create()
+                }
+                self.sendInitializationAndStartSyncNotifications(client: client)
+                
+                guard let deviceInfo = PolarFirmwareUpdateUtils.readDeviceFirmwareInfo(client: client, deviceId: identifier) else {
+                    single(.success(false))
+                    return Disposables.create()
+                }
+                
+                let firmwareUpdateRequest: FirmwareUpdateRequest
+                do {
+                    firmwareUpdateRequest = try FirmwareUpdateRequest(
+                        clientId: "polar-sensor-data-collector-ios",
+                        uuid: PolarDeviceUuid.fromDeviceId(identifier),
+                        firmwareVersion: deviceInfo.deviceFwVersion,
+                        hardwareCode: deviceInfo.deviceHardwareCode
+                    )
+                } catch {
+                    single(.success(false))
+                    return Disposables.create()
+                }
+                
+                fwApi.checkFirmwareUpdate(firmwareUpdateRequest: firmwareUpdateRequest) { result in
+                    switch result {
+                    case .success(let apiResponse):
+                        guard let statusCode = apiResponse.statusCode else {
+                            BleLogger.error("No status code received")
+                            single(.success(false))
+                            return
+                        }
+                        
+                        if statusCode == 204 {
+                            BleLogger.trace("Firmware update not available, status code 204")
+                            single(.success(false))
+                            return
+                        }
+                        
+                        if statusCode == 400 {
+                            BleLogger.error("Bad request, status code 400")
+                            single(.success(false))
+                            return
+                        }
+                        
+                        guard statusCode == 200 else {
+                            BleLogger.error("Unexpected status code: \(statusCode)")
+                            single(.success(false))
+                            return
+                        }
+                        
+                        let deviceFwVersion = deviceInfo.deviceFwVersion
+                        if !PolarFirmwareUpdateUtils.isAvailableFirmwareVersionHigher(
+                            currentVersion: deviceFwVersion,
+                            availableVersion: apiResponse.version!
+                        ) {
+                            BleLogger.trace("No firmware update available, device firmware version \(deviceFwVersion)")
+                            single(.success(false))
+                            return
+                        }
+                        
+                        BleLogger.trace("Firmware update available, latest firmware version: \(apiResponse.version!), device firmware version \(deviceFwVersion)")
+                        single(.success(true))
+                        
+                    case .failure(let error):
+                        BleLogger.error("Error checking firmware update: \(error)")
+                        single(.success(false))
+                    }
+                }
+                return Disposables.create()
+            } catch {
+                BleLogger.error("Error during firmware update: \(error)")
+                single(.success(false))
+                return Disposables.create()
+            }
+        }
+    }
 
     func updateFirmware(_ identifier: String) -> Observable<FirmwareUpdateStatus> {
         let fwApi = FirmwareUpdateApi()
