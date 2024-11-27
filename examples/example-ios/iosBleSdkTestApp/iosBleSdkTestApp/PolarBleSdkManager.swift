@@ -795,6 +795,7 @@ class PolarBleSdkManager : ObservableObject {
     }
     
     func getSdkModeStatus() async {
+        return
         if case .connected(let deviceId) = deviceConnectionState, self.sdkModeFeature.isSupported == true  {
             do {
                 NSLog("get SDK mode status")
