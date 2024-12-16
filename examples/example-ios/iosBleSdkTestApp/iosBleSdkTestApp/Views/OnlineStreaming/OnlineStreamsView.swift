@@ -154,6 +154,8 @@ extension PolarDeviceDataType: Identifiable {
             return 7
         case .temperature:
             return 8
+        case .pressure:
+            return 9
         }
     }
 }

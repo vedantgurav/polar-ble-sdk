@@ -79,6 +79,8 @@ struct OfflineRecordingEntriesRow: View {
             return .pink
         case .temperature:
             return .purple
+        case .pressure:
+            return .gray
         }
     }
 }

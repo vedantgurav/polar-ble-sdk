@@ -258,7 +258,9 @@ class PolarBleSdkManager : ObservableObject {
         case .hr:
             hrStreamStart()
         case .temperature:
-            break
+            temperatureStreamStart(settings: PolarSensorSetting(polarSensorSettings))
+        case .pressure:
+            pressureStreamStart(settings: PolarSensorSetting(polarSensorSettings))
         }
     }
     
@@ -394,8 +396,15 @@ class PolarBleSdkManager : ObservableObject {
                         self.offlineRecordingData.dataSize = offlineRecordingEntry.size
                         self.offlineRecordingData.downLoadTime = elapsedTime
                     }
-                case .temperatureOfflineRecordingData(_, startTime: let startTime):
-                    break
+                case .temperatureOfflineRecordingData(let data, startTime: let startTime):
+                    NSLog("TEMP data received")
+                    Task { @MainActor in
+                        self.offlineRecordingData.startTime = startTime
+                        self.offlineRecordingData.usedSettings = nil
+                        self.offlineRecordingData.data = dataHeaderString(.temperature) + dataToString(data)
+                        self.offlineRecordingData.dataSize = offlineRecordingEntry.size
+                        self.offlineRecordingData.downLoadTime = elapsedTime
+                    }
                 }
                 Task { @MainActor in
                     self.offlineRecordingData.loadState = OfflineRecordingDataLoadingState.success
@@ -755,6 +764,91 @@ class PolarBleSdkManager : ObservableObject {
         }
     }
     
+    func temperatureStreamStart(settings: PolarBleSdk.PolarSensorSetting) {
+        if case .connected(let deviceId) = deviceConnectionState {
+            
+            Task { @MainActor in
+                self.onlineStreamingFeature.isStreaming[.temperature] = OnlineStreamingState.inProgress
+            }
+            
+            let logFile: (url: URL, fileHandle: FileHandle)? = openOnlineStreamLogFile(type: .temperature)
+            
+            onlineStreamingDisposables[.temperature] = api.startTemperatureStreaming(deviceId, settings: settings)
+                .do(onDispose: {
+                    if let fileHandle = logFile?.fileHandle {
+                        self.closeOnlineStreamLogFile(fileHandle)
+                    }
+                    Task { @MainActor in
+                        self.onlineStreamingFeature.isStreaming[.temperature] = OnlineStreamingState.success(url: logFile?.url)
+                    }
+                })
+                .subscribe{ e in
+                    switch e {
+                    case .next(let data):
+                        if let fileHandle = logFile?.fileHandle {
+                            self.writeOnlineStreamLogFile(fileHandle, data)
+                        }
+                        
+                        for item in data.samples {
+                            NSLog("Temperature    °C: \(item.temperature) timeStamp: \(item.timeStamp)")
+                        }
+                    case .error(let err):
+                        NSLog("Temperature stream failed: \(err)")
+                        if let fileHandle = logFile?.fileHandle {
+                            self.writeErrorOnlineStreamLogFile(fileHandle, err)
+                        }
+                    case .completed:
+                        NSLog("Temperature stream completed")
+                    }
+                }
+        } else {
+            NSLog("Device is not connected \(deviceConnectionState)")
+        }
+    }
+    
+    func pressureStreamStart(settings: PolarBleSdk.PolarSensorSetting) {
+        if case .connected(let deviceId) = deviceConnectionState {
+            
+            Task { @MainActor in
+                self.onlineStreamingFeature.isStreaming[.pressure] = OnlineStreamingState.inProgress
+            }
+            
+            let logFile: (url: URL, fileHandle: FileHandle)? = openOnlineStreamLogFile(type: .pressure)
+            
+            onlineStreamingDisposables[.pressure] = api.startPressureStreaming(deviceId, settings: settings)
+                .do(onDispose: {
+                    if let fileHandle = logFile?.fileHandle {
+                        self.closeOnlineStreamLogFile(fileHandle)
+                    }
+                    Task { @MainActor in
+                        self.onlineStreamingFeature.isStreaming[.pressure] = OnlineStreamingState.success(url: logFile?.url)
+                    }
+                })
+                .subscribe{ e in
+                    switch e {
+                    case .next(let data):
+                        if let fileHandle = logFile?.fileHandle {
+                            self.writeOnlineStreamLogFile(fileHandle, data)
+                        }
+                        
+                        for item in data.samples {
+                            NSLog("Pressure    hPa: \(item.pressure) timeStamp: \(item.timeStamp)")
+                        }
+                    case .error(let err):
+                        NSLog("Pressure stream failed: \(err)")
+                        if let fileHandle = logFile?.fileHandle {
+                            self.writeErrorOnlineStreamLogFile(fileHandle, err)
+                        }
+                    case .completed:
+                        NSLog("Pressure stream completed")
+                    }
+                }
+        } else {
+            NSLog("Device is not connected \(deviceConnectionState)")
+        }
+    }
+
+    
     func sdkModeToggle() {
         if case .connected(let deviceId) = deviceConnectionState {
             if self.sdkModeFeature.isEnabled {
@@ -1073,7 +1167,9 @@ class PolarBleSdkManager : ObservableObject {
         case .hr:
             result = "HR CONTACT_SUPPORTED CONTACT_STATUS RR_AVAILABLE RR(ms)\n"
         case .temperature:
-            result = "TEMP\n"
+            result = "TIMESTAMP TEMPERATURE(Celcius)\n"
+        case .pressure:
+            result = "TIMESTAMP PRESSURE(mBar)\n"
         }
         return result
     }
@@ -1098,6 +1194,12 @@ class PolarBleSdkManager : ObservableObject {
             
         case let polarHrData as PolarHrData:
             result += polarHrData.map{ "\($0.hr) \($0.contactStatusSupported) \($0.contactStatus) \($0.rrAvailable) \($0.rrsMs.map { String($0) }.joined(separator: " "))" }.joined(separator: "\n")
+        
+        case let polarTemperatureData as PolarTemperatureData:
+            result +=  polarTemperatureData.samples.map{ "\($0.timeStamp) \($0.temperature)" }.joined(separator: "\n")
+
+        case let polarPressureData as PolarPressureData:
+            result +=  polarPressureData.samples.map{ "\($0.timeStamp) \($0.pressure)" }.joined(separator: "\n")
             
         default:
             result = "Data type not supported"
@@ -1190,7 +1292,9 @@ fileprivate extension PolarDeviceDataType {
         case .hr:
             return "HR"
         case .temperature:
-            return "TEMP"
+          return "TEMP"
+        case .pressure:
+          return "PRE"
         }
     }
 }
@@ -1248,7 +1352,7 @@ extension PolarBleSdkManager : PolarBleApiObserver {
 // MARK: - PolarBleApiDeviceInfoObserver
 extension PolarBleSdkManager : PolarBleApiDeviceInfoObserver {
     func disInformationReceivedWithKeysAsStrings(_ identifier: String, key: String, value: String) {
-        //
+        // Not implemented
     }
     
     func batteryLevelReceived(_ identifier: String, batteryLevel: UInt) {
@@ -1299,6 +1403,40 @@ extension PolarBleSdkManager : PolarBleApiDeviceFeaturesObserver {
         case .feature_polar_device_time_setup:
             Task { @MainActor in
                 self.deviceTimeSetupFeature.isSupported = true
+                
+                let dateFormatter = ISO8601DateFormatter()
+                dateFormatter.formatOptions = [.withInternetDateTime]
+                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+                
+                let ftuConfig = PolarFirstTimeUseConfig(
+                    gender: PolarFirstTimeUseConfig.Gender.female,
+                    birthDate: Date(),
+                    height: 180,
+                    weight: 80,
+                    maxHeartRate: 180,
+                    vo2Max: 80,
+                    restingHeartRate: 100,
+                    trainingBackground: PolarFirstTimeUseConfig.TrainingBackground.frequent,
+                    deviceTime: dateFormatter.string(from: Date()),
+                    typicalDay: PolarFirstTimeUseConfig.TypicalDay.mostlyMoving,
+                    sleepGoalMinutes: 480
+                )
+                
+                /// TODO: calling doFirstTimeUse deserves a better place in the
+                /// application flow
+                api
+                    .doFirstTimeUse(identifier, ftuConfig: ftuConfig)
+                    .subscribe(
+                        onCompleted: {
+                            NSLog("FTU Completed")
+                        },
+                        onError: { err in
+                            NSLog("FTU Error: \(err)")
+                        },
+                        onDisposed: {
+                            NSLog("FTU Disposed")
+                        }
+                    ).disposed(by: disposeBag)
             }
             
             Task {
@@ -1351,6 +1489,8 @@ extension PolarBleSdkManager : PolarBleApiDeviceFeaturesObserver {
             Task {
                 await getSdkModeStatus()
             }
+            break
+        case .feature_polar_firmware_update:
             break
         case .feature_polar_activity_data:
             break
