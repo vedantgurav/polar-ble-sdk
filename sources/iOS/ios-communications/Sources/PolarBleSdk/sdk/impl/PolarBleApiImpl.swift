@@ -1215,6 +1215,11 @@ extension PolarBleApiImpl: PolarBleApi  {
             })
             .flatMap { entry -> Observable<PolarOfflineRecordingEntry> in
                 let components = entry.name.split(separator: "/")
+                
+                guard components.count > 4 else {
+                    return Observable.error(PolarErrors.dateTimeFormatFailed(description: "Listing offline recording failed. Not enough components in entry name: \(entry.name)"))
+                }
+                
                 let dateFormatter = DateFormatter()
                 dateFormatter.locale = Locale(identifier: "en_US_POSIX")
 
