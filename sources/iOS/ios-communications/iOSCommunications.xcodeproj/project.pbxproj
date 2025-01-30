@@ -352,6 +352,7 @@
 		A5E5BDBC295AC55F00188D55 /* OfflineRecordingError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E5BDB6295AC26500188D55 /* OfflineRecordingError.swift */; };
 		A5E5BDBD295AC56000188D55 /* OfflineRecordingError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E5BDB6295AC26500188D55 /* OfflineRecordingError.swift */; };
 		A5E75E95263BC9F700BEA32A /* BleGattClientBaseTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E75E94263BC9F700BEA32A /* BleGattClientBaseTest.swift */; };
+		AA1C8ECC2D130187007EC386 /* SkinTemperatureDataTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1C8ECB2D130179007EC386 /* SkinTemperatureDataTest.swift */; };
 		AA27D9C72B88C38600397873 /* TemperatureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA27D9C62B88C38600397873 /* TemperatureData.swift */; };
 		AA27D9C82B88C38600397873 /* TemperatureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA27D9C62B88C38600397873 /* TemperatureData.swift */; };
 		AA27D9C92B88C38600397873 /* TemperatureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA27D9C62B88C38600397873 /* TemperatureData.swift */; };
@@ -383,6 +384,9 @@
 		AABC2A3A2C859DDF00BFC6BD /* PressureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABC2A392C859DDF00BFC6BD /* PressureData.swift */; };
 		AABC2A3B2C859DDF00BFC6BD /* PressureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABC2A392C859DDF00BFC6BD /* PressureData.swift */; };
 		AABC2A3C2C859DDF00BFC6BD /* PressureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABC2A392C859DDF00BFC6BD /* PressureData.swift */; };
+		AABCBC5C2D08494A00364101 /* SkinTemperatureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABCBC5B2D08494A00364101 /* SkinTemperatureData.swift */; };
+		AABCBC5D2D08494A00364101 /* SkinTemperatureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABCBC5B2D08494A00364101 /* SkinTemperatureData.swift */; };
+		AABCBC5E2D08494A00364101 /* SkinTemperatureData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABCBC5B2D08494A00364101 /* SkinTemperatureData.swift */; };
 		AAC63EF62B908FC100CC8DFE /* TemperatureDataTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC63EF52B908FC100CC8DFE /* TemperatureDataTest.swift */; };
 		AACBC9212BEB4392003A5D1B /* SDLogConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AACBC91F2BEB4392003A5D1B /* SDLogConfig.swift */; };
 		AACBC92A2BEB4491003A5D1B /* sensor_data_log.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = AACBC9242BEB4491003A5D1B /* sensor_data_log.pb.swift */; };
@@ -582,6 +586,7 @@
 		A5E5BDB6295AC26500188D55 /* OfflineRecordingError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OfflineRecordingError.swift; sourceTree = "<group>"; };
 		A5E5BDB7295AC26500188D55 /* OfflineRecordingData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OfflineRecordingData.swift; sourceTree = "<group>"; };
 		A5E75E94263BC9F700BEA32A /* BleGattClientBaseTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BleGattClientBaseTest.swift; sourceTree = "<group>"; };
+		AA1C8ECB2D130179007EC386 /* SkinTemperatureDataTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinTemperatureDataTest.swift; sourceTree = "<group>"; };
 		AA27D9C62B88C38600397873 /* TemperatureData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureData.swift; sourceTree = "<group>"; };
 		AA27EF2A2C995E690097AF23 /* user_devset.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = user_devset.pb.swift; sourceTree = "<group>"; };
 		AA27EF2E2C995EB30097AF23 /* PolarUserDeviceSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PolarUserDeviceSettings.swift; sourceTree = "<group>"; };
@@ -599,6 +604,7 @@
 		AAB386F32CB934CF00D18313 /* PolarAutomaticSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolarAutomaticSamples.swift; sourceTree = "<group>"; };
 		AAB386F42CB934CF00D18313 /* PolarStoredData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolarStoredData.swift; sourceTree = "<group>"; };
 		AABC2A392C859DDF00BFC6BD /* PressureData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PressureData.swift; sourceTree = "<group>"; };
+		AABCBC5B2D08494A00364101 /* SkinTemperatureData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkinTemperatureData.swift; sourceTree = "<group>"; };
 		AAC63EF52B908FC100CC8DFE /* TemperatureDataTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureDataTest.swift; sourceTree = "<group>"; };
 		AACBC91F2BEB4392003A5D1B /* SDLogConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDLogConfig.swift; sourceTree = "<group>"; };
 		AACBC9242BEB4491003A5D1B /* sensor_data_log.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = sensor_data_log.pb.swift; sourceTree = "<group>"; };
@@ -685,6 +691,7 @@
 		6C1079211D6D6EA000931948 /* iOSCommunicationsTests */ = {
 			isa = PBXGroup;
 			children = (
+				AA1C8ECB2D130179007EC386 /* SkinTemperatureDataTest.swift */,
 				A57D951329CD8F5100D771ED /* BlePmdClientTest.swift */,
 				A5A88C02299A6FA0007B9C28 /* PmdOfflineTriggerTest.swift */,
 				A58F0CAF2983EFE000B5615C /* OfflineHrDataTest.swift */,
@@ -1071,6 +1078,7 @@
 				A57D05462930B217002824D9 /* PpgData.swift */,
 				A58F0CAB2983EE2700B5615C /* OfflineHrData.swift */,
 				AA27D9C62B88C38600397873 /* TemperatureData.swift */,
+				AABCBC5B2D08494A00364101 /* SkinTemperatureData.swift */,
 			);
 			path = model;
 			sourceTree = "<group>";
@@ -1503,6 +1511,7 @@
 				A57D05452930B01D002824D9 /* EcgDataTest.swift in Sources */,
 				A57D951429CD8F5100D771ED /* BlePmdClientTest.swift in Sources */,
 				A543BC17282261E900852672 /* BlePolarHrAdvertisementTest.swift in Sources */,
+				AA1C8ECC2D130187007EC386 /* SkinTemperatureDataTest.swift in Sources */,
 				841A378D2C808987009194CC /* pftp_request.pb.swift in Sources */,
 				A5A88C03299A6FA0007B9C28 /* PmdOfflineTriggerTest.swift in Sources */,
 				A5488C4C264939A000B2DB5C /* BleHrClientTest.swift in Sources */,
@@ -1598,6 +1607,7 @@
 				A5E5BDB8295AC26500188D55 /* OfflineRecordingError.swift in Sources */,
 				A55E08AE2A273C770059E6C7 /* BleHtsClient.swift in Sources */,
 				6C67C8001E169CCE00411498 /* BleDisClient.swift in Sources */,
+				AABCBC5D2D08494A00364101 /* SkinTemperatureData.swift in Sources */,
 				6C32C6D7220AD3CA006615C3 /* CBScanningProtocol.swift in Sources */,
 				84D0098B2C85D41800AB4C43 /* PolarFirstTimeUseConfig.swift in Sources */,
 				6C4A6A311CC0BA2400E3AD73 /* BlePfcClient.swift in Sources */,
@@ -1634,6 +1644,7 @@
 				A57728A327CE860600855884 /* pftp_error.pb.swift in Sources */,
 				A55604C4298B893800DB6EDB /* PolarOnlineStreamingApi.swift in Sources */,
 				A5E5BDBD295AC56000188D55 /* OfflineRecordingError.swift in Sources */,
+				AABCBC5E2D08494A00364101 /* SkinTemperatureData.swift in Sources */,
 				A57D05492930B217002824D9 /* PpgData.swift in Sources */,
 				6C39E8DB209B07BC001F7E44 /* CBDeviceSessionImpl.swift in Sources */,
 				A57728B727CE860600855884 /* PolarBleApi.swift in Sources */,
@@ -1744,6 +1755,7 @@
 				6C770B8B206B77F300F3D51D /* BlePolarDeviceIdUtility.swift in Sources */,
 				A57728BA27CE860600855884 /* PolarBleApiDefaultImpl.swift in Sources */,
 				A580139825B1636A00654E60 /* BlePolarDeviceCapabilitiesUtility.swift in Sources */,
+				AABCBC5C2D08494A00364101 /* SkinTemperatureData.swift in Sources */,
 				A57728AA27CE860600855884 /* exercise_samples.pb.swift in Sources */,
 				A57D051E2922658F002824D9 /* GyrData.swift in Sources */,
 				A5CD1730297C03D400C62BC7 /* PmdSecret.swift in Sources */,
