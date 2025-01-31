@@ -205,7 +205,9 @@ public class CBDeviceListenerImpl: NSObject, CBCentralManagerDelegate {
         BleLogger.trace("didFailToConnect: ", peripheral.description, "error: ", error?.localizedDescription ?? "error reason unknown")
         queue.async(execute: {
             if let device = self.session(peripheral) {
-                self.handleDisconnected(device)
+                let errorCode = (error as NSError?)?.code ?? 0
+                let pairingInfoRemoved = errorCode == CBError.Code.peerRemovedPairingInformation.rawValue
+                self.handleDisconnected(device, pairingInfoRemoved: pairingInfoRemoved)
             } else {
                 BleLogger.error("didFailToConnect: Unknown peripheral received")
             }
@@ -225,8 +227,8 @@ public class CBDeviceListenerImpl: NSObject, CBCentralManagerDelegate {
         })
     }
     
-    fileprivate func handleDisconnected(_ session: CBDeviceSessionImpl) {
-        if automaticReconnection {
+    fileprivate func handleDisconnected(_ session: CBDeviceSessionImpl, pairingInfoRemoved: Bool = false) {
+        if automaticReconnection, !pairingInfoRemoved {
             switch (session.state) {
             case .sessionOpen where session.connectionType == .directConnection && self.blePowered():
                 updateSessionState(session, state: .sessionOpening)
@@ -241,6 +243,9 @@ public class CBDeviceListenerImpl: NSObject, CBCentralManagerDelegate {
             }
         } else {
             updateSessionState(session, state: .sessionClosed)
+        }
+        if pairingInfoRemoved {
+            NotificationCenter.default.post(name: .init("PairingInfoRemoved"), object: nil)
         }
     }
 }

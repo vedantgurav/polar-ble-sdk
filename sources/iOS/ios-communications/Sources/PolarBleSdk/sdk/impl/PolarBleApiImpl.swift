@@ -2563,6 +2563,209 @@ extension PolarBleApiImpl: PolarBleApi  {
             return Observable.just(FirmwareUpdateStatus.fwUpdateFailed(details: "Error: \(error.localizedDescription)"))
         }
     }
+    
+    func installFirmware(_ identifier: String, package firmwarePackage: Data) -> Observable<FirmwareUpdateStatus> {
+        let fwApi = FirmwareUpdateApi()
+
+        do {
+            let session = try self.sessionFtpClientReady(identifier)
+            guard let client = session.fetchGattClient(BlePsFtpClient.PSFTP_SERVICE) as? BlePsFtpClient else {
+                return Observable.just(FirmwareUpdateStatus.fwUpdateFailed(details: "No BlePsFtpClient available"))
+            }
+            self.sendInitializationAndStartSyncNotifications(client: client)
+
+            guard let deviceInfo = PolarFirmwareUpdateUtils.readDeviceFirmwareInfo(client: client, deviceId: identifier) else {
+                return Observable.just(FirmwareUpdateStatus.fwUpdateFailed(details: "Failed to read device firmware info"))
+            }
+
+            let firmwareUpdateRequest: FirmwareUpdateRequest
+            do {
+                firmwareUpdateRequest = try FirmwareUpdateRequest(
+                    clientId: "polar-sensor-data-collector-ios",
+                    uuid: PolarDeviceUuid.fromDeviceId(identifier),
+                    firmwareVersion: deviceInfo.deviceFwVersion,
+                    hardwareCode: deviceInfo.deviceHardwareCode
+                )
+            } catch {
+                return Observable.just(FirmwareUpdateStatus.fwUpdateFailed(details: "Failed to create FirmwareUpdateRequest: \(error.localizedDescription)"))
+            }
+
+            return Observable.create { observer in
+                fwApi.checkFirmwareUpdate(firmwareUpdateRequest: firmwareUpdateRequest) { result in
+                    switch result {
+                    case .success(let apiResponse):
+                        let deviceFwVersion = deviceInfo.deviceFwVersion
+
+                        let factoryResetMaxWaitTimeSeconds: TimeInterval = 6 * 60
+                        let rebootMaxWaitTimeSeconds: TimeInterval = 3 * 60
+
+                        var backupContent: [PolarBackupManager.BackupFileData]?
+                        let backupManager = PolarBackupManager(client: client)
+
+                        observer.onNext(FirmwareUpdateStatus.fetchingFwUpdatePackage(details: "Loading firmware update package..."))
+
+                        backupManager.backupDevice()
+                            .asObservable()
+                            .flatMap { content -> Observable<FirmwareUpdateStatus> in
+                                backupContent = content
+                                BleLogger.trace("Device backup completed with \(content.count) files")
+                                observer.onNext(FirmwareUpdateStatus.fetchingFwUpdatePackage(details: "Backup completed, loading firmware..."))
+
+                                return fwApi.getFirmwareUpdatePackage(url: apiResponse.fileUrl!)
+                                    .flatMap { downloadedFirmwarePackage -> Observable<FirmwareUpdateStatus> in
+                                       
+
+                                        let contentLength = firmwarePackage.count
+                                        BleLogger.trace("Firmware package zipped size: \(contentLength) bytes")
+                                        observer.onNext(FirmwareUpdateStatus.writingFwUpdatePackage(details: "Writing firmware package..."))
+
+                                        guard let unzippedFirmwarePackage = PolarFirmwareUpdateUtils.unzipFirmwarePackage(zippedData: firmwarePackage) else {
+                                            BleLogger.error("Failed to unzip firmware package")
+                                            observer.onNext(FirmwareUpdateStatus.fwUpdateFailed(details: "Failed to unzip firmware package"))
+                                            observer.onCompleted()
+                                            return Observable.empty()
+                                        }
+
+                                        let unzippedContentLength = unzippedFirmwarePackage.reduce(0) { $0 + $1.value.count }
+                                        BleLogger.trace("Firmware package unzipped, total size: \(unzippedContentLength) bytes")
+
+                                        let sortedFirmwarePackage = unzippedFirmwarePackage.sorted { (file1, file2) -> Bool in
+                                            return PolarFirmwareUpdateUtils.FwFileComparator.compare(file1.key, file2.key) == .orderedAscending
+                                        }
+
+                                        return Observable.from(sortedFirmwarePackage)
+                                            .concatMap { fileEntry -> Observable<FirmwareUpdateStatus> in
+                                                let fileName = fileEntry.key
+                                                let firmwareBytes = fileEntry.value
+                                                let filePath = "/\(fileName)"
+                                                
+                                                
+                                                // Polar H10 FW package has this file
+                                                if fileName.lowercased() == "readme.txt" {
+                                                    BleLogger.trace("Skipping file \(fileName)")
+                                                    return Observable.just(FirmwareUpdateStatus.writingFwUpdatePackage(details: "Skipping file \(fileName)"))
+                                                }
+
+                                                return self.writeFirmwareToDevice(deviceId: identifier, firmwareFilePath: filePath, firmwareBytes: firmwareBytes)
+                                                    .map { bytesWritten -> FirmwareUpdateStatus in
+                                                        BleLogger.trace("Writing firmware update file \(fileName), bytes written: \(bytesWritten)/\(firmwareBytes.count) bytes")
+                                                        return FirmwareUpdateStatus.writingFwUpdatePackage(details: "Writing firmware update file \(fileName), bytes written: \(bytesWritten)/\(firmwareBytes.count) bytes")
+                                                    }
+                                            }
+                                            .concat(Observable.just(FirmwareUpdateStatus.finalizingFwUpdate(details: "Finalizing firmware update...")))
+                                    }
+                            }
+                            .flatMap { status -> Observable<FirmwareUpdateStatus> in
+                                if case FirmwareUpdateStatus.finalizingFwUpdate = status {
+                                    return Observable.create { observer in
+                                        BleLogger.trace("Firmware update is in finalizing stage")
+
+                                        BleLogger.trace("Device rebooting")
+                                        self.waitDeviceSessionToOpen(deviceId: identifier, timeoutSeconds: Int(factoryResetMaxWaitTimeSeconds), waitForDeviceDownSeconds: 10)
+                                            .do(onSubscribe: {
+                                                BleLogger.trace("Waiting for device session to open after reboot with timeout: \(rebootMaxWaitTimeSeconds) seconds")
+                                            })
+                                            .andThen(Single.just(status))
+                                            .flatMap { _ in
+                                                return Single.create { singleObserver in
+                                                    do {
+                                                        let session = try self.sessionFtpClientReady(identifier)
+                                                        singleObserver(.success(session))
+                                                    } catch {
+                                                        BleLogger.trace("Error: \(error). Waiting for FTP client readiness.")
+                                                        singleObserver(.failure(error))
+                                                    }
+                                                    return Disposables.create()
+                                                }
+                                                .flatMap { _ in
+                                                    BleLogger.trace("Performing factory reset while preserving pairing information")
+                                                    return self.doFactoryReset(identifier, preservePairingInformation: true)
+                                                        .do(onSubscribe: {
+                                                            BleLogger.trace("Factory reset initiated")
+                                                        })
+                                                        .andThen(Single.just(()))
+                                                }
+                                            }
+                                            .flatMap { _ in
+                                                BleLogger.trace("Waiting for device session to open after factory reset with timeout: \(factoryResetMaxWaitTimeSeconds) seconds")
+                                                return self.waitDeviceSessionToOpen(deviceId: identifier, timeoutSeconds: Int(factoryResetMaxWaitTimeSeconds), waitForDeviceDownSeconds: 10)
+                                                    .do(onSubscribe: {
+                                                        BleLogger.trace("Waiting for device session to open post factory reset")
+                                                    })
+                                                    .andThen(Single.just(()))
+                                            }
+                                            .flatMap { _ in
+                                                if let backupContent = backupContent {
+                                                    BleLogger.trace("Restoring backup after firmware update")
+                                                    return backupManager.restoreBackup(backupFiles: backupContent)
+                                                        .do(onSubscribe: {
+                                                            BleLogger.trace("Backup restoration initiated")
+                                                        })
+                                                        .andThen(Single.just(FirmwareUpdateStatus.fwUpdateCompletedSuccessfully(details: apiResponse.version!)))
+                                                } else {
+                                                    BleLogger.trace("No backup available to restore, proceeding with completion")
+                                                    return Single.just(FirmwareUpdateStatus.fwUpdateCompletedSuccessfully(details: apiResponse.version!))
+                                                }
+                                            }
+                                            .asObservable()
+                                            .subscribe(
+                                                onNext: { status in
+                                                    BleLogger.trace("Emitting next status: \(status)")
+                                                    observer.onNext(status)
+                                                },
+                                                onError: { error in
+                                                    BleLogger.trace("Error during device reboot or factory reset: \(error)")
+                                                    observer.onError(error)
+                                                },
+                                                onCompleted: {
+                                                    BleLogger.trace("Device reboot and factory reset completed successfully")
+                                                    observer.onCompleted()
+                                                }
+                                            )
+                                        return Disposables.create()
+                                    }
+                                } else {
+                                    return Observable.just(status)
+                                }
+                            }
+                            .subscribe(
+                                onNext: { status in
+                                    observer.onNext(status)
+                                },
+                                onError: { error in
+                                    BleLogger.error("Error during firmware update: \(error)")
+                                    observer.onNext(FirmwareUpdateStatus.fwUpdateFailed(details: "Error during firmware update: \(error.localizedDescription)"))
+                                    observer.onError(error)
+                                },
+                                onCompleted: {
+                                    _ = self.setLocalTime(identifier, time: Date(), zone: TimeZone.current)
+                                        .subscribe(
+                                            onCompleted: {
+                                               BleLogger.trace("Local time set successfully")
+                                            },
+                                            onError: { error in
+                                               BleLogger.error("Error setting local time: \(error)")
+                                            },
+                                            onDisposed: {
+                                               self.sendTerminateAndStopSyncNotifications(client: client)
+                                               observer.onCompleted()
+                                           }
+                                       )
+                                }
+                            )
+                    case .failure(let error):
+                        BleLogger.error("Error checking firmware update: \(error)")
+                        observer.onNext(FirmwareUpdateStatus.fwUpdateFailed(details: "Error checking firmware update: \(error.localizedDescription)"))
+                        observer.onCompleted()
+                    }
+                }
+                return Disposables.create()
+            }
+        } catch {
+            BleLogger.error("Error during firmware update: \(error)")
+            return Observable.just(FirmwareUpdateStatus.fwUpdateFailed(details: "Error: \(error.localizedDescription)"))
+        }
+    }
 
     func getSteps(identifier: String, fromDate: Date, toDate: Date) -> Single<[PolarStepsData]> {
         do {

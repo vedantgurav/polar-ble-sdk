@@ -360,6 +360,9 @@ class CBDeviceSessionImpl: BleDeviceSession, CBPeripheralDelegate, BleAttributeT
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         BleLogger.trace_if_error("didUpdateNotificationStateForCharacteristic \(characteristic.uuid.uuidString): ", error: error)
         let errorCode = (error as NSError?)?.code ?? 0
+        if errorCode == CBError.Code.encryptionTimedOut.rawValue {
+            NotificationCenter.default.post(name: .init("EncryptionInsufficient"), object: nil)
+        }
         if errorCode == CBError.Code.uuidNotAllowed.rawValue {
             BleLogger.trace("Special handling needed for security re-establish")
             attNotifyQueue.removeAll()
