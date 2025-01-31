@@ -176,7 +176,7 @@ import UIKit
         throw PolarErrors.notificationNotEnabled
     }
     
-    private func sessionFtpClientReady(_ identifier: String) throws -> BleDeviceSession {
+    internal func sessionFtpClientReady(_ identifier: String) throws -> BleDeviceSession {
         let session = try sessionServiceReady(identifier, service: BlePsFtpClient.PSFTP_SERVICE)
         let client = session.fetchGattClient(BlePsFtpClient.PSFTP_SERVICE) as! BlePsFtpClient
         if client.isCharacteristicNotificationEnabled(BlePsFtpClient.PSFTP_MTU_CHARACTERISTIC) {
@@ -2647,62 +2647,6 @@ extension PolarBleApiImpl: PolarBleApi  {
             return Single.error(error)
         }
     }
-
-    func getSleepData(identifier: String, fromDate: Date, toDate: Date) -> Single<[PolarSleepData.PolarSleepAnalysisResult]> {
-        
-        if (fromDate > toDate) {
-            return Single.error(PolarErrors.invalidArgument(description: "toDate cannot be smaller than fromDate."))
-        }
-        
-        do {
-            let session = try self.sessionFtpClientReady(identifier)
-            guard let client = session.fetchGattClient(BlePsFtpClient.PSFTP_SERVICE) as? BlePsFtpClient else {
-                return Single.error(PolarErrors.serviceNotFound)
-            }
-
-            var sleepDataList = [PolarSleepData.PolarSleepAnalysisResult]()
-            let calendar = Calendar.current
-            var datesList = [Date]()
-            var currentDate = fromDate
-
-            if (fromDate == toDate) {
-                datesList.append(fromDate)
-            } else {
-                while currentDate <= toDate {
-                    datesList.append(currentDate)
-                    if let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) {
-                        currentDate = nextDate
-                    } else {
-                        break
-                    }
-                }
-            }
-
-            return Observable.from(datesList)
-                .flatMap { date -> Single<(PolarSleepData.PolarSleepAnalysisResult)> in
-                    return PolarSleepUtils.readSleepFromDayDirectory(client: client, date: date)
-                        .map { sleepData -> (PolarSleepData.PolarSleepAnalysisResult) in
-                            return sleepData
-                        }
-                }
-                .toArray()
-                .map { sleepAnalysisResult -> [PolarSleepData.PolarSleepAnalysisResult] in
-                    // Create an unwrapped copy of sleepDataList to allow removal of nil PolarSleepAnalysisResults from the list.
-                    var sleepDataList = [PolarSleepData.PolarSleepAnalysisResult]()
-                    sleepDataList.append(contentsOf: sleepAnalysisResult)
-                    for sleepData in sleepDataList {
-                        if (sleepData.sleepStartTime == nil) {
-                            if let index = sleepDataList.firstIndex(where: { $0.lastModified == sleepData.lastModified }) {
-                                sleepDataList.remove(at: index)
-                            }
-                        }
-                    }
-                    return sleepDataList
-                }
-        } catch {
-            return Single.error(error)
-        }
-    }
     
     func get247HrSamples(identifier: String, fromDate: Date, toDate: Date) -> Single<[Polar247HrSamplesData]> {
         do {
@@ -2747,6 +2691,42 @@ extension PolarBleApiImpl: PolarBleApi  {
                 .toArray()
                 .flatMap { _ in
                     Single.just(nightlyRechargeDataList)
+                }
+        } catch {
+            return Single.error(error)
+        }
+    }
+
+    func getSkinTemperature(identifier: String, fromDate: Date, toDate: Date) -> Single<[PolarSkinTemperatureData.PolarSkinTemperatureResult]> {
+        do {
+            let session = try self.sessionFtpClientReady(identifier)
+            guard let client = session.fetchGattClient(BlePsFtpClient.PSFTP_SERVICE) as? BlePsFtpClient else {
+                return Single.error(PolarErrors.serviceNotFound)
+            }
+
+            var skinTemperatureDataList = [PolarSkinTemperatureData.PolarSkinTemperatureResult]()
+
+            let calendar = Calendar.current
+            var currentDate = fromDate
+
+            var datesList = [Date]()
+
+            while currentDate <= toDate {
+                datesList.append(currentDate)
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+            }
+
+            return Observable.from(datesList)
+                .flatMap { date in
+                    PolarSkinTemperatureUtils.readSkinTemperatureData(client: client, date: date)
+                        .asObservable()
+                        .do(onNext: { skinTemp in
+                            skinTemperatureDataList.append(skinTemp)
+                        })
+                }
+                .toArray()
+                .flatMap { _ in
+                    Single.just(skinTemperatureDataList)
                 }
         } catch {
             return Single.error(error)
@@ -2890,6 +2870,7 @@ extension PolarBleApiImpl: PolarBleApi  {
             return Single.error(error)
         }
     }
+
 
     func deleteStoredDeviceData(_ identifier: String, dataType: PolarStoredDataType.StoredDataType, until: Date?) -> Completable {
         
