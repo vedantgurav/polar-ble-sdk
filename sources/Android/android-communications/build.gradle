@@ -13,6 +13,9 @@ buildscript {
         classpath 'com.android.tools.build:gradle:8.7.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "com.google.protobuf:protobuf-gradle-plugin:$protobuf_version"
+        if (project.hasProperty("artifactoryUser") && project.hasProperty("artifactoryPassword")) {
+            classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.28.1"
+        }
     }
 }
 
